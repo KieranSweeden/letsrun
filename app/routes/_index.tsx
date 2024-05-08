@@ -4,8 +4,8 @@ import type {
   MetaFunction,
 } from "@remix-run/node";
 import { Form, json, useLoaderData, useSearchParams } from "@remix-run/react";
-import DayRecommendations from "~/components/DayRecommendations";
-import { getRecommendations } from "~/lib/weather";
+import Suggestions from "~/components/Suggestion";
+import { getSuggestions } from "~/lib/suggestions/index";
 
 export const meta: MetaFunction = () => {
   return [
@@ -20,9 +20,13 @@ export const loader: LoaderFunction = async ({
   const acceptLanguageHeader = request.headers.get("accept-language");
   const language = acceptLanguageHeader?.split(";")[0].split(",")[0];
   const url = new URL(request.url);
-  const location = url.searchParams.get("location");
-  const recommendations = await getRecommendations({ location });
-  return json({ recommendations, language });
+  const location = url.searchParams.get("location") ?? "";
+  const response = await getSuggestions({ location });
+  return json({
+    suggestions: response.suggestions,
+    location: response.location,
+    language,
+  });
 };
 
 export default function Index() {
@@ -43,12 +47,8 @@ export default function Index() {
         <button type="submit">Submit</button>
       </Form>
       <hr />
-      {data?.recommendations?.forecast?.forecastday ? (
-        <DayRecommendations
-          dayForecast={data.recommendations.forecast.forecastday}
-          language={data.language}
-          location={data.recommendations.location}
-        />
+      {data.suggestions.length ? (
+        <Suggestions suggestions={data.suggestions} location={data.location} />
       ) : null}
     </div>
   );
